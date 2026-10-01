@@ -10,7 +10,7 @@ Status terms: **Implemented / checked** = tested to the stated scope, **Implemen
 | AGENT-1 P0 | Tkinter window, pystray icon/menu, end/quit, device/code/status | Visible mock companion launched; Windows package generated; tray interaction needs manual review |
 | PAIR-1 P0 | Expiring one-time six-digit local code, verified identity, device credentials | Browser pairing checked; wrong/expired/reused/locked tests pass |
 | LINK-1 P0 | Versioned authenticated loopback WebSocket, status, reconnect | Real local socket tests and browser reconnect checked; deployed HTTPS unverified |
-| FOCUS-1 P0 | Native window minimization adapter, honest acknowledgement | Disposable-window native calls checked; full desktop activation not exercised |
+| FOCUS-1 P0 | Native minimization continuously maintained, session allow-list snapshot, honest acknowledgement | Disposable native window: allowed stays usable; removed from allow-list minimizes; reopening re-minimizes; full desktop compatibility not certified |
 | FOCUS-2 P0 | Identity/marker-validated restoration, local/web end, shared cleanup | Native safe-window restoration and mocked manual cleanup checked |
 | FOCUS-3 P0 | Agent absolute deadline, duration picker/custom, countdown | Browser one-minute mock expiry plus deterministic timer/sleep tests checked |
 | SAFE-1 P0 | Hard-coded protected set, Windows directory, editable extra allow-list | Protection/validation tests; protected helper skipped in Windows check |
@@ -31,7 +31,7 @@ Status terms: **Implemented / checked** = tested to the stated scope, **Implemen
 |---|---|---|
 | Landing + setup/download guidance | React Landing / Devices | Implemented; no fabricated public installer link |
 | Login/signup/protected routes | React Auth/App + Django auth views | Checked login, ownership, auth boundaries |
-| Overview + active focus | React Dashboard/Focus | Checked desktop/mobile and live mock timer |
+| Overview + active focus | React Dashboard/Focus | Full-viewport session, fullscreen requested directly on confirmation, exit on end, browser-denial fallback; build/lint checked; automatic fullscreen browser walkthrough pending |
 | Devices/pair/unpair | React Devices, backend Device, runtime revoke | Pair checked; remote revocation tested; offline revocation semantics documented |
 | Protected + editable apps/presets | AllowList API and React Allowlist | Implemented; protected validation tested |
 | Schedules CRUD | Schedule API and React Schedules | Implemented; device ownership and validation tested |

@@ -44,6 +44,8 @@ The constructor recovers previous placement changes. An activated interrupted se
 
 Validates executable basenames such as `code.exe`. Hard-coded browser/helper/system entries and the Windows directory are preserved. User entries only add protection. Nothing a browser message sends can remove the built-in protection.
 
+During focus, `Controller.tick()` first checks expiry, then calls `enforce_focus()` with the session's saved allow-list. The Windows adapter rescans and minimizes new or reopened distractions. It keeps each window's first placement rather than overwriting it on every pass. An enforcement error ends the session and restores windows. End Focus stops future enforcement; it never kills apps. Allowed apps remain ordinary usable desktop apps, not embedded browser panels.
+
 ### `focus_agent/windows.py`
 
 `WindowsAdapter` uses ctypes declarations to match the Windows C API's pointer and integer types. `identity(hwnd)` finds the PID, executable path and process creation time. If those cannot be read safely, the window is skipped.

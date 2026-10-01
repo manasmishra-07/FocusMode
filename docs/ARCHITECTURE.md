@@ -18,7 +18,9 @@ The explicit `mock` adapter provides integration behavior without touching windo
 
 Process identity = PID + executable path + process creation time. A per-window property also protects against HWND reuse within the same process. The journal stores handles/placement/process identity locally; no window titles are read or uploaded.
 
-Windows are minimized once, not continually policed. Users may reopen apps at any time. No process termination, global keyboard capture, registry policy, hosts-file edit, auto-start installation or persistent restriction is used.
+During a session, Controller.tick checks the deadline first, then calls enforce_focus with the session's allow-list snapshot. The Windows adapter rescans eligible windows, minimizes new or reopened distractions, and retains the first placement and identity marker in the recovery journal. End, expiry, or enforcement failure stops further checks and restores managed windows. Allowed apps remain usable. No process termination, global keyboard capture, registry policy, hosts-file edit, auto-start installation or persistent restriction is used. This is a cooperative personal focus tool, not an OS security boundary.
+
+The confirmation click requests browser fullscreen before awaiting the agent acknowledgement, preserving the browser's user-gesture requirement. The active page fills the viewport even if fullscreen permission is denied. Esc exits fullscreen without ending agent enforcement. Browser tabs and protected apps are not blocked. Scheduled sessions have no browser gesture and therefore require a click for browser fullscreen.
 
 ## Failure behavior
 

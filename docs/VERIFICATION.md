@@ -2,6 +2,28 @@
 
 ## Observed results
 
+### Continuous focus correction
+
+- Frontend lint and production build pass; 8 Django tests and 13 agent tests pass. Agent tests require unsandboxed Windows DPAPI access; the invalid-origin handshake log is an intentional rejection test.
+- `agent/tests/safe_enforcement_check.py` uses one disposable Tk window, restricts enumeration to its HWND, and substitutes its identity only inside the test. Real Win32 calls verify allowed-app preservation, re-minimization after reopening, first-placement retention, manual and timed restoration, and no enforcement after ending. It never targets other desktop windows.
+- Confirmation now requests fullscreen synchronously from the click, before network work. Full-page layout works independently of fullscreen permission. Browser-specific automatic fullscreen remains a manual verification item; build/lint alone do not prove browser permission behavior.
+- Restart the companion after this update; an already-running Python process still contains the old one-shot behavior.
+- Updated PyInstaller package builds at `agent/release-focus/FocusMode/FocusMode.exe`. Windows Application Control blocked launching this new executable, so its smoke test is unverified; the source-based launcher and native disposable-window tests work. The old release directory is obsolete after OneDrive prevented rebuilding in place.
+
+### Resumed build verification
+
+- Preserved the user's additional 5174 CORS origins and existing environment/database files.
+- Fixed blank `DATABASE_URL` startup failure; added a regression test.
+- Fixed JWT refresh being rejected by expired Authorization headers; added a regression test.
+- Eight Django tests now pass, including both regression cases. Updated production build and ESLint pass.
+- Restored missing `server/.env.example` and `client/.env.example` templates without overwriting `.env` files.
+- Added a component launcher (`run.ps1`) using the existing virtual environment, and strict Vite port selection to avoid unexpected origin changes.
+- Re-ran all 11 companion tests and the native disposable-window check successfully.
+- Rebuilt the executable into `agent/release/FocusMode/` because OneDrive locked the previous build cache. The packaged `FocusMode.exe --smoke-test` opened the real Tk/tray runtime in mock mode with temporary storage, reached ready state, and exited successfully (code 0).
+- Verified login and the rendered dashboard again against the repaired backend. Saved the preview as `docs/dashboard.jpg`. Existing accounts and the recorded simulation session were preserved.
+
+### Earlier implementation checks
+
 - Django migrations applied to local SQLite; system check reports no issues.
 - Six backend test cases passed: auth/password hashing, role/ownership boundaries, logout access/refresh revocation, allow-list/schedule validation, event retry deduplication, filtered history and real-vs-mock analytics.
 - Eleven companion test cases passed: invalid/expired/reused/locked codes, duplicate starts/repeated stops, absolute timer with simulated browser closure/sleep, durable restart queue, activation rollback, protected apps and durations, schedule heads-up/dedup/missed runs, real Windows DPAPI encryption/decryption, real loopback unauthenticated rejection, duplicate request-ID replay, disallowed Origin rejection and schema rejection.

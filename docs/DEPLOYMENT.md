@@ -25,10 +25,10 @@ The agent accepts optional `AGENT_TLS_CERT` and `AGENT_TLS_KEY` for WSS. Use a c
 From repository root:
 
 ```powershell
-.\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean --windowed --name FocusMode --paths agent --collect-all tzdata --distpath agent\dist --workpath agent\build --specpath agent agent\main.py
+.\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean --windowed --name FocusMode --paths agent --collect-all tzdata --distpath agent\release-focus --workpath agent\build-release --specpath agent agent\main.py
 ```
 
-Distribute the entire `agent/dist/FocusMode` directory, including `_internal`, as a zip or an installer you review. This is a directory build, not a standalone single executable. Place a configured `.env` beside the executable if needed; do not package real credentials. Run `FocusMode.exe --adapter mock` first. Use `--adapter windows` only when ready for real confirmed focus behavior. No auto-start or hidden installation is configured.
+Distribute the entire updated `agent/release-focus/FocusMode` directory, including `_internal`, as a zip or an installer you review. This is a directory build, not a standalone single executable. Place a configured `.env` beside the executable if needed; do not package real credentials. Run `FocusMode.exe --adapter mock` first. Use `--adapter windows` only when ready for real confirmed focus behavior. No auto-start or hidden installation is configured. The previous `agent/release` directory was locked by OneDrive during rebuilding and is obsolete.
 
 DPAPI/journal files normally live under `%LOCALAPPDATA%/FocusMode`. `--data-dir` supports an explicit alternative. Never share credentials.bin. New configurations must keep exact loopback bindings and origins. The generated build is unsigned; publisher signing and clean-machine antivirus/install checks remain release tasks.
 
