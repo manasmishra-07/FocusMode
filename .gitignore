@@ -1,0 +1,11 @@
+.venv/
+node_modules/
+dist/
+build/
+__pycache__/
+*.pyc
+*.sqlite3
+.env
+*.spec
+agent-data/
+test-results/
