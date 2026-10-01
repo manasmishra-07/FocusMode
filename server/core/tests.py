@@ -7,6 +7,22 @@ from .models import User, Device, FocusSession
 
 
 class APITests(TestCase):
+    def test_refresh_ignores_expired_access_header(self):
+        client = APIClient()
+        data = client.post('/api/v1/auth/login', {'email': self.user.email, 'password':'StrongPass!2026'}, format='json').data['data']
+        client.credentials(HTTP_AUTHORIZATION='Bearer expired-or-invalid-access-token')
+        response = client.post('/api/v1/auth/refresh', {'refresh': data['refresh']}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('access', response.data['data'])
+
+    def test_blank_database_url_uses_sqlite(self):
+        import os
+        import importlib
+        from unittest.mock import patch
+        with patch.dict(os.environ, {'DATABASE_URL': ''}):
+            settings = importlib.reload(importlib.import_module('config.settings'))
+            self.assertEqual(settings.DATABASES['default']['ENGINE'], 'django.db.backends.sqlite3')
+
     def setUp(self):
         self.user = User.objects.create_user(
             username="one@example.com",

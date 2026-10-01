@@ -65,9 +65,13 @@ def tokens(user):
 
 
 class AuthView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth"
+
+    def get_authenticate_header(self, request):
+        return 'Bearer'
 
     def post(self, request, action):
         if action == "refresh":

@@ -12,7 +12,7 @@ SECRET_KEY = os.getenv(
 )
 if not DEBUG and SECRET_KEY.startswith("development-only"):
     raise RuntimeError("Set a production SECRET_KEY")
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1, testserver").split(",")
+ALLOWED_HOSTS = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",") if host.strip()]
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -35,7 +35,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
-    "default": dj_database_url.config(default=f'sqlite:///{BASE_DIR / "db.sqlite3"}')
+    "default": dj_database_url.parse(os.getenv("DATABASE_URL", "").strip() or f'sqlite:///{BASE_DIR / "db.sqlite3"}')
 }
 AUTH_USER_MODEL = "core.User"
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.BCryptSHA256PasswordHasher"]
