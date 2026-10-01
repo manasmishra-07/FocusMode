@@ -5,6 +5,10 @@ A React dashboard, Django API, and visible Python companion for reversible Windo
 
 ## Start locally (Windows PowerShell)
 
+**Quick start in this prepared folder:** no activation is necessary. Run `./run.ps1 check`, then use three terminals for `./run.ps1 server`, `./run.ps1 client`, and `./run.ps1 agent`. The companion defaults to simulation; use `./run.ps1 agent -Real` for real Windows behavior. `./run.ps1 setup` installs dependencies and copies only missing environment files; it preserves your existing configuration.
+
+The client now uses port 5173 strictly. If that port is occupied, stop the previous development server or deliberately run `npm run dev -- --port 5174`. Both 5173 and 5174 are supported by the default backend and agent origins; existing `.env` files must also include the origin you use. A blank `DATABASE_URL` correctly selects SQLite.
+
 Requires Python 3.12+ with Tkinter, Node 20.19+ or 22+, and Windows for the real companion. Run these commands from this folder. No administrator rights are required.
 
 ```powershell
@@ -42,6 +46,10 @@ Open **http://127.0.0.1:5173**. Log in, open My devices, enter the six-digit cod
 
 The environment used to build this project had no `python` on PATH. The existing `.venv` is already prepared here. On a fresh machine, install Python with Tcl/Tk support before the commands above.
 
+Confirming a manual session requests browser fullscreen immediately and opens the full-page focus view. If browser permission prevents fullscreen, use **Enter fullscreen** or F11. Esc leaves fullscreen without ending the timer. Ending a session leaves fullscreen. Real mode checks eligible windows throughout the session (roughly every half-second), including newly opened and reopened distractions, and minimizes them again. Allowed apps such as Code.exe stay usable as separate desktop apps; they are not embedded in the dashboard. Browsers, agent and protected system software remain available. Simulation never minimizes real windows. Scheduled sessions cannot automatically request browser fullscreen because browsers require a user gesture.
+
+After updating agent code: end the current session, quit the companion, then run `.\run.ps1 agent -Real` again. Refresh the dashboard. Allow-list changes apply to the next session; remove Code.exe before starting if you want VS Code treated as a distraction.
+
 ## Development accounts
 
 | Role | Email | Password |
@@ -59,7 +67,7 @@ The environment used to build this project had no `python` on PATH. The existing
 - Visible Tkinter companion and tray; Windows DPAPI secrets; write-ahead recovery journal; offline event queue; real ctypes Windows adapter and an explicitly labelled mock adapter.
 - Recurring timezone-aware schedules with opt-in, 15-second heads-up, local cancellation, overlap prevention and missed-run records.
 - Actual/planned durations, filtered paginated history, daily chart, streak, best starting hour, completion rate and aggregate admin statistics.
-- Windows companion package under `agent/dist/FocusMode/`. Keep the whole folder together; `FocusMode.exe` needs `_internal/`. Defaults to mock. Use `FocusMode.exe --adapter windows` for real actions.
+- Updated Windows companion package under `agent/release-focus/FocusMode/`. Keep the whole folder together; `FocusMode.exe` needs `_internal/`. Defaults to mock. Use `FocusMode.exe --adapter windows` for real actions. The older `agent/release/` folder is obsolete.
 
 ## Tests and build
 
@@ -73,7 +81,7 @@ Set-Location client
 npm run lint
 npm run build
 Set-Location ..
-.\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean --windowed --name FocusMode --paths agent --collect-all tzdata --distpath agent\dist --workpath agent\build --specpath agent agent\main.py
+.\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean --windowed --name FocusMode --paths agent --collect-all tzdata --distpath agent\release --workpath agent\build-release --specpath agent agent\main.py
 ```
 
 See [verification](docs/VERIFICATION.md) for observed results and unverified scenarios. Unit tests that mock the adapter do not certify Windows behavior.
@@ -88,7 +96,7 @@ React ── JWT / HTTP ──> Django REST API ──> SQLite / PostgreSQL
                                 └─ Windows adapter: minimize / restore
 ```
 
-The website cannot control the OS directly. The companion validates identity through Django and keeps its backend secret encrypted with current-user Windows DPAPI. It preserves supported browsers, helper processes, the Windows directory, critical process names and user-selected executables. Unknown process identities, already-minimized windows, owned windows and windows without a minimize control are skipped. It never kills a process or prevents manually reopening an application.
+The website cannot control the OS directly. The companion validates identity through Django and keeps its backend secret encrypted with current-user Windows DPAPI. It preserves supported browsers, helper processes, the Windows directory, critical process names and user-selected executables. Unknown process identities, already-minimized windows, owned windows and windows without a minimize control are skipped. It never kills a process. Reopened eligible distractions are minimized again until End Focus; this is reversible personal focus enforcement, not an OS security boundary.
 
 The timer uses an absolute agent-owned deadline. A closed dashboard does not end the session. Restoration checks process ID, executable path, process creation time and a window-specific marker, reducing handle-reuse risks. Journaling happens before OS changes. A crashed process cannot clean up; minimized windows remain manually usable and the next companion start attempts restoration. See [architecture](docs/ARCHITECTURE.md).
 

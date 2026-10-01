@@ -93,6 +93,17 @@ class Controller:
         if self.session and self.clock() >= self.session["deadline"]:
             self.exit_focus("timer")
             return True
+        if self.session:
+            try:
+                self.last_result = self.adapter.enforce_focus(
+                    {"apps": self.session["apps"]}
+                )
+            except Exception:
+                self.exit_focus("enforcement_failed")
+                self.last_result["error"] = (
+                    "Focus ended because app enforcement failed. Check the companion for any windows needing restoration."
+                )
+                return True
         return False
 
     def get_state(self):

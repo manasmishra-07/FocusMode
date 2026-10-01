@@ -116,8 +116,9 @@ class Runtime:
                 os.environ["AGENT_TLS_CERT"], os.environ["AGENT_TLS_KEY"]
             )
         origins = os.getenv(
-            "ALLOWED_ORIGINS", "http://127.0.0.1:5173,http://localhost:5173"
+            "ALLOWED_ORIGINS", "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:5174,http://localhost:5174"
         ).split(",")
+        origins = [origin.strip().rstrip('/') for origin in origins if origin.strip()]
         try:
             async with serve(
                 protocol.handle,
@@ -143,6 +144,8 @@ class Runtime:
                             elif command == "unpair":
                                 await self.revoke(local=True)
                         self.controller.tick()
+                        if not self.running:
+                            break
                         if self.credentials and self.sync == "Synced":
                             self.scheduler.tick(
                                 self.config.get("schedules", []),

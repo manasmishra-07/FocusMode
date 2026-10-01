@@ -11,6 +11,8 @@ from .runtime import Runtime
 
 
 def launch(data_dir, mode, auto_quit_ms=None):
+    failures = []
+    observed_state = []
     events = queue.Queue()
     commands = queue.Queue()
     root = tk.Tk()
@@ -99,7 +101,9 @@ def launch(data_dir, mode, auto_quit_ms=None):
                 root.deiconify()
                 root.lift()
             if event.get("fatal"):
-                messagebox.showerror("Companion could not start", event["fatal"])
+                failures.append(event["fatal"])
+                if not auto_quit_ms:
+                    messagebox.showerror("Companion could not start", event["fatal"])
                 icon.stop()
                 root.destroy()
                 return
@@ -108,6 +112,8 @@ def launch(data_dir, mode, auto_quit_ms=None):
                 root.deiconify()
                 root.lift()
             if "state" in event:
+                if not observed_state:
+                    observed_state.append(True)
                 s = event["state"]
                 seconds = s["remaining"]
                 device.configure(text=s["name"] + " · " + s["pairing"])
@@ -134,9 +140,19 @@ def launch(data_dir, mode, auto_quit_ms=None):
                     text=f"{s['sync']} · {s['pending_events']} queued events"
                 )
                 icon.title = "Focus Mode · " + s["focus"]
-                if s["pending_restore"]:
+                if s["focus"] != "FOCUSING" and s["pending_restore"]:
                     notice.configure(
                         text="Some windows could not be restored. Retry End Focus or restore them manually."
+                    )
+                elif s.get("result", {}).get("error"):
+                    notice.configure(text=s["result"]["error"])
+                elif s["focus"] == "FOCUSING":
+                    notice.configure(
+                        text=(
+                            "Simulation only"
+                            if s["mode"] == "mock"
+                            else "App enforcement active. Allowed apps remain usable."
+                        )
                     )
                 elif not s["scheduled_pending"]:
                     notice.configure(text="")
@@ -144,3 +160,5 @@ def launch(data_dir, mode, auto_quit_ms=None):
 
     poll()
     root.mainloop()
+    if auto_quit_ms and (failures or not observed_state):
+        raise RuntimeError("; ".join(failures) or "Companion never reached ready state")

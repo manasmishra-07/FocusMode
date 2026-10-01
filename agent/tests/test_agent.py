@@ -70,6 +70,31 @@ class AgentTests(unittest.TestCase):
         self.controller.tick()
         self.assertEqual(self.controller.get_state()["focus"], "IDLE")
 
+    def test_enforcement_uses_session_allowlist_and_stops_on_expiry(self):
+        self.start()
+        with patch.object(
+            self.adapter, "enforce_focus", return_value={"changed": 2}
+        ) as enforce:
+            self.controller.tick()
+            enforce.assert_called_once_with({"apps": ["code.exe"]})
+            self.assertEqual(self.controller.last_result["changed"], 2)
+            self.now += 61
+            self.controller.tick()
+            self.controller.tick()
+            self.assertEqual(enforce.call_count, 1)
+
+    def test_enforcement_failure_ends_and_restores_session(self):
+        self.start()
+        with patch.object(
+            self.adapter, "enforce_focus", side_effect=RuntimeError("failed")
+        ), patch.object(
+            self.adapter, "exit_focus", return_value={"restore_failures": 0}
+        ) as restore:
+            self.assertTrue(self.controller.tick())
+            restore.assert_called_once_with("enforcement_failed")
+        self.assertIsNone(self.controller.session)
+        self.assertIn("error", self.controller.last_result)
+
     def test_restart_recovery_and_outage_queue(self):
         self.start()
         self.now += 10

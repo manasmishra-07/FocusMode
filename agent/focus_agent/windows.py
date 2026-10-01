@@ -1,4 +1,4 @@
-"""Conservative Win32 adapter. Never kills processes or repeatedly blocks windows."""
+"""Reversible Win32 minimisation, maintained while a focus session is active."""
 
 import ctypes as c
 from ctypes import wintypes as w
@@ -107,7 +107,12 @@ class WindowsAdapter:
             self.k.CloseHandle(handle)
 
     def enter_focus(self, options):
-        records = []
+        return self.enforce_focus(options)
+
+    def enforce_focus(self, options):
+        # Retain the FIRST placement, even when a user reopens a tracked window.
+        records = self.store.get("windows", [])
+        candidates = []
         skipped = 0
         errors = []
 
@@ -136,22 +141,36 @@ class WindowsAdapter:
             if not self.u.GetWindowPlacement(hwnd, c.byref(placement)):
                 skipped += 1
                 return True
-            records.append(
-                {
-                    "hwnd": int(hwnd),
-                    "identity": identity,
-                    "placement": bytes(placement).hex(),
-                    "marker": secrets.randbelow(2**30) + 1,
-                }
+            existing = next(
+                (
+                    r
+                    for r in records
+                    if r["hwnd"] == int(hwnd)
+                    and r["identity"] == identity
+                    and self.u.GetPropW(hwnd, "FocusModeRecovery") == r["marker"]
+                ),
+                None,
             )
+            if existing:
+                candidates.append(existing)
+                return True
+            record = {
+                "hwnd": int(hwnd),
+                "identity": identity,
+                "placement": bytes(placement).hex(),
+                "marker": secrets.randbelow(2**30) + 1,
+            }
+            records.append(record)
+            candidates.append(record)
             return True
 
         callback = self.callback_type(visit)
         if not self.u.EnumWindows(callback, 0):
             raise RuntimeError("Unable to enumerate application windows")
         # Write-ahead journal BEFORE the first OS action. A restart can recover a partial activation.
-        self.store.set("windows", records)
-        for record in records:
+        if candidates:
+            self.store.set("windows", records)
+        for record in candidates:
             if self.identity(record["hwnd"]) != record["identity"]:
                 continue
             if not self.u.SetPropW(
@@ -161,8 +180,9 @@ class WindowsAdapter:
                 continue
             if not self.u.ShowWindowAsync(record["hwnd"], 6):
                 errors.append("A window could not be minimized")
-        time.sleep(0.2)
-        for record in records:
+        if candidates:
+            time.sleep(0.2)
+        for record in candidates:
             if (
                 self.identity(record["hwnd"]) == record["identity"]
                 and self.u.GetPropW(record["hwnd"], "FocusModeRecovery")
@@ -173,7 +193,7 @@ class WindowsAdapter:
         if errors:
             self.exit_focus("activation_failed")
             raise RuntimeError("; ".join(errors))
-        return {"changed": len(records), "skipped": skipped}
+        return {"changed": len(records), "skipped": skipped, "enforcing": True}
 
     def exit_focus(self, reason):
         pending = []
@@ -208,8 +228,11 @@ class MockAdapter:
     def enter_focus(self, options):
         return {"changed": 0, "skipped": 0}
 
+    def enforce_focus(self, options):
+        return {"changed": 0, "skipped": 0, "enforcing": False}
+
     def exit_focus(self, reason):
         return {"restore_failures": 0}
 
     def get_state(self):
-        return {"mode": "mock", "pending_restore": len(self.store.get('windows', []))}
+        return {"mode": "mock", "pending_restore": len(self.store.get("windows", []))}

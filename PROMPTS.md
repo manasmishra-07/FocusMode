@@ -19,3 +19,10 @@ Implementation work proceeded in these stages (these are work notes, not invente
 - Package the Windows companion and document startup, architecture, caveats and viva walkthrough.
 
 The PDF asks for 10–20 key team prompts. Only actual provided prompts are recorded here; the submitting team should append their real subsequent prompts rather than pad the log.
+
+## Resume after user modifications
+
+User: “so now restart ur work from here and start building this whole project as soon as possible before hitting daily limit ok”. Inspected current committed files first, retained additional CORS configuration and existing data, repaired SQLite fallback and expired-token refresh, added regression tests and `run.ps1`, rebuilt the Windows package, and verified its mock smoke test plus the browser dashboard.
+# Continuous focus correction
+
+User requested automatic fullscreen on session confirmation and enforcement throughout the session. Added gesture-triggered fullscreen, full-page active view, repeated reversible minimization with a preserved recovery journal, and native disposable-window tests for allow-list behavior, reopening, newly eligible windows, and ending. Browser and allowed-app exemptions follow the PS. Package launch verification remains blocked by Windows Application Control.
