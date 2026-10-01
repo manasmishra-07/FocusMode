@@ -2,6 +2,9 @@
 node_modules/
 dist/
 build/
+build-release/
+release/
+release-focus/
 __pycache__/
 *.pyc
 *.sqlite3

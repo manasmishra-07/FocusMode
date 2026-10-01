@@ -666,6 +666,15 @@ function Confirm({ agent, duration, close, notify }) {
   }, []);
   async function start() {
     setBusy(true);
+    // Must run directly inside the confirmation gesture, before awaiting the agent.
+    const requestedFullscreen =
+      !document.fullscreenElement && document.fullscreenEnabled;
+    const fullscreenRequest = requestedFullscreen
+      ? document.documentElement
+          .requestFullscreen()
+          .then(() => true)
+          .catch(() => false)
+      : Promise.resolve(Boolean(document.fullscreenElement));
     try {
       await agent.command("enterFocus", {
         durationMin: duration,
@@ -673,7 +682,18 @@ function Confirm({ agent, duration, close, notify }) {
       });
       close();
       navigate("/focus");
+      if (!(await fullscreenRequest))
+        notify(
+          "Browser fullscreen was unavailable. Use Enter fullscreen or F11.",
+        );
     } catch (e) {
+      if (
+        (await fullscreenRequest) &&
+        requestedFullscreen &&
+        document.fullscreenElement
+      ) {
+        await document.exitFullscreen().catch(() => {});
+      }
       setError(e.message);
     } finally {
       setBusy(false);
@@ -697,7 +717,7 @@ function Confirm({ agent, duration, close, notify }) {
       <p>
         {agent.state?.mode === "mock"
           ? "This is a simulation. No windows will change."
-          : "The companion will minimize eligible distracting windows for this session. Nothing is closed and unsaved work stays intact."}
+          : "The dashboard opens fullscreen. The companion minimizes eligible distracting windows and keeps minimizing them if reopened or newly launched until focus ends. Nothing is closed and unsaved work stays intact."}
       </p>
       <div className="consent-box">
         <strong>These stay available</strong>
@@ -705,8 +725,9 @@ function Confirm({ agent, duration, close, notify }) {
         <p>{agent.state?.apps.join(", ") || "No additional apps selected"}</p>
       </div>
       <p>
-        You can reopen any app, or end focus from the dashboard or the
-        companion. Only changed windows are restored.
+        Allowed apps stay usable. End focus from the dashboard or companion to
+        stop app enforcement and restore changed windows. Esc leaves fullscreen
+        without ending the session.
       </p>
       <div className="error" hidden={!error}>
         {error}
@@ -724,10 +745,52 @@ function Confirm({ agent, duration, close, notify }) {
 }
 function Focus({ agent, notify }) {
   const s = agent.state;
+  const screen = useRef(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreenError, setFullscreenError] = useState("");
+  useEffect(() => {
+    const element = screen.current;
+    document.body.classList.add("focus-page-active");
+    const ownsFullscreen = () =>
+      document.fullscreenElement === element ||
+      document.fullscreenElement === document.documentElement;
+    const update = () => setFullscreen(ownsFullscreen());
+    update();
+    document.addEventListener("fullscreenchange", update);
+    return () => {
+      document.removeEventListener("fullscreenchange", update);
+      document.body.classList.remove("focus-page-active");
+      if (ownsFullscreen()) {
+        document.exitFullscreen().catch(() => {});
+      }
+    };
+  }, []);
+  useEffect(() => {
+    if (s?.focus === "IDLE" && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, [s?.focus]);
+  async function toggleFullscreen() {
+    setFullscreenError("");
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        if (!document.fullscreenEnabled || !screen.current.requestFullscreen) {
+          throw new Error("Fullscreen unavailable");
+        }
+        await screen.current.requestFullscreen();
+      }
+    } catch {
+      setFullscreenError(
+        "Fullscreen could not open. Open this dashboard in Chrome or Edge and try again, or press F11.",
+      );
+    }
+  }
   const remaining = s?.remaining || 0;
   const total = (s?.session?.planned_minutes || 25) * 60;
   return (
-    <div className="focus-screen">
+    <div className="focus-screen" ref={screen}>
       <span className="pill teal">
         {s?.focus === "FOCUSING" ? "FOCUS MODE IS ON" : "YOUR FOCUS SPACE"}
       </span>
@@ -758,6 +821,22 @@ function Focus({ agent, notify }) {
         <ShieldCheck size={18} /> Browsers, agent and system apps stay available
       </p>
       <p>{s?.session?.apps.join(" · ")}</p>
+      {s?.focus === "FOCUSING" && (
+        <>
+          <p className="window-result">
+            {s?.mode === "mock"
+              ? "Simulation: no real windows were minimized."
+              : typeof s?.result?.changed === "number"
+                ? `${s.result.changed} window${s.result.changed === 1 ? "" : "s"} managed this session. ${s.result.enforcing ? "App enforcement is active." : "Restart the companion to enable continuous enforcement."}`
+                : "Waiting for the companion's window report."}
+          </p>
+          <button className="fullscreen-button" onClick={toggleFullscreen}>
+            {fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          </button>
+          <small>Esc leaves fullscreen. Your focus timer keeps running.</small>
+          {fullscreenError && <p role="alert">{fullscreenError}</p>}
+        </>
+      )}
       {s?.focus === "FOCUSING" ? (
         <button
           className="end-button"
@@ -775,11 +854,12 @@ function Focus({ agent, notify }) {
           Back to overview
         </Link>
       )}
-      {s?.pending_restore > 0 && (
+      {s?.focus !== "FOCUSING" && s?.pending_restore > 0 && (
         <p role="alert">
           Some windows need manual restoration. Check the companion.
         </p>
       )}
+      {s?.result?.error && <p role="alert">{s.result.error}</p>}
       <small>Your session continues even if you close this tab.</small>
     </div>
   );
