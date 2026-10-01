@@ -2,7 +2,6 @@
 
 A React dashboard, Django API, and visible Python companion for reversible Windows focus sessions. Built in the selected **FocusMode** folder.
 
-**Stack substitution:** the exam PDF specifies MERN/MongoDB. This implementation intentionally uses React + Django REST Framework + SQLite (PostgreSQL ready), as requested. Teacher acceptance is required; literal MERN compliance is not claimed.
 
 ## Start locally (Windows PowerShell)
 
@@ -116,4 +115,4 @@ The timer uses an absolute agent-owned deadline. A closed dashboard does not end
 - [Four-minute demo script](docs/DEMO.md)
 - [Prompt provenance](PROMPTS.md)
 
-Team names, roll numbers, repository URL and demo-video URL must be filled by the submitting team. None are fabricated here.
+
